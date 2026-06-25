@@ -45,6 +45,8 @@
 html {
   scroll-behavior: smooth;
   scroll-padding-top: 80px;
+  overflow-x: hidden;
+  width: 100%;
 }
 
 body {
@@ -53,7 +55,13 @@ body {
   color: var(--navy);
   line-height: 1.6;
   overflow-x: hidden;
+  width: 100%;
   cursor: none;
+}
+
+/* Belt-and-suspenders: nothing should ever be wider than the viewport */
+.container, section, header, footer, .hero, .nav {
+  max-width: 100vw;
 }
 
 img { max-width: 100%; display: block; }
@@ -423,6 +431,7 @@ input, textarea, select { font-family: inherit; }
 /* ── HERO ────────────────────────────────────────────────────── */
 .hero {
   min-height: 100vh;
+  min-height: 100dvh;
   background: var(--navy);
   display: flex;
   align-items: center;
@@ -447,12 +456,13 @@ input, textarea, select { font-family: inherit; }
   opacity: 0.4;
 }
 
-.hero-shapes { position: absolute; inset: 0; pointer-events: none; }
+.hero-shapes { position: absolute; inset: 0; pointer-events: none; contain: strict; }
 
 .shape {
   position: absolute;
   border-radius: 50%;
   filter: blur(80px);
+  will-change: transform;
 }
 
 .shape-1 {
@@ -571,45 +581,6 @@ input, textarea, select { font-family: inherit; }
   gap: 16px;
   margin-bottom: 64px;
   animation: fadeInUp 0.8s ease 0.4s both;
-}
-
-.hero-stats {
-  display: flex;
-  align-items: center;
-  gap: 32px;
-  animation: fadeInUp 0.8s ease 0.5s both;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-}
-
-.stat-num {
-  font-family: var(--font-display);
-  font-size: clamp(36px, 5vw, 56px);
-  color: var(--white);
-  line-height: 1;
-}
-
-.stat-plus {
-  color: var(--red);
-  font-family: var(--font-display);
-  font-size: 32px;
-}
-
-.stat-label {
-  font-size: 12px;
-  color: rgba(255,255,255,0.5);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  margin-top: 4px;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 48px;
-  background: rgba(255,255,255,0.15);
 }
 
 .hero-scroll-indicator {
@@ -835,16 +806,6 @@ input, textarea, select { font-family: inherit; }
 .services {
   background: var(--white);
   position: relative;
-}
-
-.services-bg-accent {
-  position: absolute;
-  top: 0;
-  right: 0;
-  width: 40%;
-  height: 100%;
-  background: linear-gradient(135deg, var(--off-white) 0%, transparent 60%);
-  pointer-events: none;
 }
 
 .services-tabs {
@@ -1713,8 +1674,6 @@ input, textarea, select { font-family: inherit; }
 
   .hero-headline { font-size: clamp(64px, 20vw, 100px); }
 
-  .hero-stats { gap: 20px; }
-
   .footer-grid { grid-template-columns: 1fr; gap: 36px; }
   .footer-bottom { flex-direction: column; text-align: center; }
 
@@ -1728,6 +1687,17 @@ input, textarea, select { font-family: inherit; }
   .badge-num { font-size: 24px; }
 
   .contact-form-wrap { padding: 32px 24px; }
+
+  .helpline-banner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 18px 20px;
+  }
+  .helpline-banner a { font-size: 22px; }
+
+  .script-row { gap: 10px; flex-wrap: wrap; }
+  .script-sample { font-size: 15px; }
 }
 
 @media (max-width: 480px) {
@@ -1735,8 +1705,39 @@ input, textarea, select { font-family: inherit; }
   .online-cards { grid-template-columns: 1fr; }
   .binding-cards { grid-template-columns: 1fr; }
   .hero-cta { flex-direction: column; }
-  .hero-stats { flex-direction: column; gap: 16px; align-items: flex-start; }
   .stat-divider { width: 40px; height: 1px; }
+
+  .about-card-main { padding: 28px 20px; }
+  .about-icon-grid { gap: 10px; }
+  .icon-block { padding: 14px; }
+  .service-card, .binding-card, .why-card { padding: 24px 20px; }
+  .online-card { padding: 24px 20px; }
+  .dtp-card { padding: 24px 20px; }
+}
+
+/* ── MOBILE PERFORMANCE ──────────────────────────────────────────
+   Blurred, continuously-animating shapes are the single heaviest
+   cost on this page — large filter:blur() layers force the browser
+   to repaint a big area every frame. Phones (and many laptops) have
+   far less GPU headroom than a desktop, so shrink and slow them down
+   instead of running the full desktop effect everywhere. */
+@media (max-width: 768px) {
+  .shape { filter: blur(40px); }
+  .shape-1 { width: 280px; height: 280px; }
+  .shape-2 { width: 220px; height: 220px; }
+  .shape-3 { width: 160px; height: 160px; }
+  .hero-noise { display: none; } /* SVG turbulence filter is costly to paint on mobile GPUs */
+}
+
+/* Turn off purely decorative infinite animations on small screens —
+   they cost battery/CPU on every frame and add nothing essential. */
+@media (max-width: 480px) {
+  .shape-1, .shape-2, .shape-3,
+  .about-badge-float,
+  .scroll-line,
+  .badge-dot {
+    animation: none;
+  }
 }
 
 /* ── REDUCED MOTION ─────────────────────────────────────────── */
