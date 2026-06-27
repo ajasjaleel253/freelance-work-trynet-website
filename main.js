@@ -1,11 +1,6 @@
-/* ============================================================
-   TRYNET DESIGNING & PRINTING — main.js
-   Vanilla JS, no dependencies. Production-ready.
-   ============================================================ */
 (() => {
   'use strict';
 
-  /* Mark JS as active (CSS has .no-js fallbacks for everything) */
   document.documentElement.classList.remove('no-js');
   document.documentElement.classList.add('js');
 
@@ -17,6 +12,13 @@
   };
 
   /* ============================================================
+     0. CONFIG
+     ============================================================ */
+  
+  const WEB3FORMS_ACCESS_KEY = '72a13fbc-5658-4d77-97a3-7f08688a3fee';
+  const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
+
+  /* ============================================================
      1. PRELOADER
      ============================================================ */
   function initPreloader() {
@@ -25,15 +27,12 @@
 
     const hide = () => {
       preloader.classList.add('done');
-      // Remove from DOM/tab order once fully hidden
       setTimeout(() => { preloader.style.display = 'none'; }, 650);
       document.body.classList.remove('is-loading');
     };
 
     document.body.classList.add('is-loading');
 
-    // Hide once page is fully loaded, but never block longer than 2.2s
-    // (the CSS bar animation itself runs 1.8s, so this lines up nicely).
     let loaded = false;
     window.addEventListener('load', () => {
       loaded = true;
@@ -78,7 +77,6 @@
     });
 
     function tick() {
-      // Smooth lag/easing for the outline ring
       outlineX += (mouseX - outlineX) * 0.18;
       outlineY += (mouseY - outlineY) * 0.18;
       outline.style.left = outlineX + 'px';
@@ -91,7 +89,6 @@
       }
     }
 
-    // Magnetic hover state on interactive elements
     const hoverTargets = 'a, button, .tab-btn, input, textarea, select, [data-cursor-hover]';
     document.addEventListener('mouseover', (e) => {
       if (e.target.closest(hoverTargets)) outline.classList.add('hovered');
@@ -100,7 +97,6 @@
       if (e.target.closest(hoverTargets)) outline.classList.remove('hovered');
     });
 
-    // Hide custom cursor and show native one over text inputs for clarity
     document.addEventListener('mouseover', (e) => {
       if (e.target.closest('input, textarea, select')) {
         document.body.style.cursor = 'auto';
@@ -127,7 +123,6 @@
     setScrolled();
     window.addEventListener('scroll', setScrolled, { passive: true });
 
-    // Active nav link via IntersectionObserver
     const sections = Array.from(document.querySelectorAll('section[id]'));
     const navLinks = Array.from(document.querySelectorAll('.nav-link'));
     if (!sections.length || !navLinks.length) return;
@@ -135,7 +130,6 @@
     const linkFor = (id) => navLinks.find(a => a.getAttribute('href') === '#' + id);
 
     const observer = new IntersectionObserver((entries) => {
-      // Pick the section with the greatest intersection ratio currently in view
       let best = null;
       entries.forEach(entry => {
         if (entry.isIntersecting) {
@@ -285,9 +279,7 @@
         const isMatch = panel.id === 'tab-' + key;
         panel.classList.toggle('active', isMatch);
         if (isMatch) {
-          // restart the CSS reveal animation each time the tab is shown
           panel.style.animation = 'none';
-          // eslint-disable-next-line no-unused-expressions
           panel.offsetHeight;
           panel.style.animation = '';
           if (focusPanel) panel.setAttribute('tabindex', '-1');
@@ -325,7 +317,7 @@
   }
 
   /* ============================================================
-     8. CONTACT FORM — validation + submission feedback
+     8. CONTACT FORM — validation + real submission (Web3Forms)
      ============================================================ */
   function initContactForm() {
     const form = document.getElementById('contactForm');
@@ -410,7 +402,29 @@
       if (btnLoading) btnLoading.style.display = isLoading ? '' : 'none';
     }
 
-    form.addEventListener('submit', (e) => {
+    // One shared error slot for submit-level failures (network, API key,
+    // etc.) as opposed to per-field validation errors above.
+    function setFormError(message) {
+      let el = form.querySelector('.form-submit-error');
+      if (!message) {
+        if (el) el.style.display = 'none';
+        return;
+      }
+      if (!el) {
+        el = document.createElement('p');
+        el.className = 'form-submit-error';
+        el.setAttribute('role', 'alert');
+        el.style.color = 'var(--red, #c00)';
+        el.style.fontSize = '13px';
+        el.style.fontWeight = '600';
+        el.style.marginTop = '12px';
+        form.insertBefore(el, submitBtn.nextSibling);
+      }
+      el.textContent = message;
+      el.style.display = 'block';
+    }
+
+    form.addEventListener('submit', async (e) => {
       e.preventDefault();
 
       const keysToValidate = Object.keys(fields);
@@ -427,10 +441,9 @@
       }
 
       if (successMsg) successMsg.style.display = 'none';
+      setFormError('');
       setLoading(true);
 
-      // Build a mailto fallback (no backend present) so the enquiry
-      // still reaches the studio even without a server integration.
       const payload = {
         name: fields.name.value.trim(),
         phone: fields.phone.value.trim(),
@@ -439,10 +452,30 @@
         message: fields.message.value.trim(),
       };
 
-      // Simulate network latency for a polished, deliberate feel,
-      // then reveal success state and reset the form.
-      setTimeout(() => {
-        setLoading(false);
+      try {
+        const response = await fetch(WEB3FORMS_ENDPOINT, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            access_key: WEB3FORMS_ACCESS_KEY,
+            subject: `New Enquiry — ${payload.service} (Trynet website)`,
+            from_name: 'Trynet Website',
+            name: payload.name,
+            phone: payload.phone,
+            email: payload.email || 'Not provided',
+            service: payload.service,
+            message: payload.message,
+            // Used by Web3Forms to reply directly to the visitor if they gave one
+            replyto: payload.email || undefined,
+          }),
+        });
+
+        const result = await response.json();
+
+        if (!response.ok || !result.success) {
+          throw new Error(result.message || 'Submission failed. Please try again.');
+        }
+
         form.reset();
         Object.values(fields).forEach(f => f && setFieldError(f, ''));
         if (successMsg) {
@@ -450,18 +483,14 @@
           successMsg.setAttribute('role', 'status');
         }
         showToast('Thanks! We will reach out shortly.');
-
-        // Open a pre-filled mail client as a reliable delivery path
-        const subject = encodeURIComponent('New Enquiry — ' + payload.service);
-        const body = encodeURIComponent(
-          `Name: ${payload.name}\nPhone: ${payload.phone}\nEmail: ${payload.email || '—'}\nService: ${payload.service}\n\nMessage:\n${payload.message}`
+      } catch (err) {
+        setFormError(
+          'Sorry, something went wrong sending your message. Please call us at 9152 72 39 81 or try again.'
         );
-        const mailLink = document.createElement('a');
-        mailLink.href = `mailto:trynetm4u@gmail.com?subject=${subject}&body=${body}`;
-        // Not auto-clicked: kept available for the user/dev to wire up
-        // a real backend later. Stored on window for convenience.
-        window.__trynetLastEnquiryMailto = mailLink.href;
-      }, 900);
+        showToast('Could not send your message. Please try again.');
+      } finally {
+        setLoading(false);
+      }
     });
   }
 
@@ -575,3 +604,4 @@
     initAnchorLinks();
   });
 })();
+
