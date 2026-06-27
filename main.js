@@ -15,7 +15,7 @@
      0. CONFIG
      ============================================================ */
   
-  const WEB3FORMS_ACCESS_KEY = '72a13fbc-5658-4d77-97a3-7f08688a3fee';
+  const WEB3FORMS_ACCESS_KEY = '';
   const WEB3FORMS_ENDPOINT = 'https://api.web3forms.com/submit';
 
   /* ============================================================
