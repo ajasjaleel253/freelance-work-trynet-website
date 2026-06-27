@@ -1895,3 +1895,27 @@ select:focus-visible,
     align-items: center;
   }
 }
+
+.nav-links.open {
+  display: flex;
+  position: fixed;
+  inset: 0;
+  background: var(--navy);
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 32px;
+  z-index: 999;
+  overscroll-behavior: contain;
+}
+
+.about-card-main::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  right: -60px;
+  width: 200px;
+  height: 200px;
+  background: radial-gradient(circle, rgba(204,0,0,0.2) 0%, transparent 70%);
+  pointer-events: none;
+}

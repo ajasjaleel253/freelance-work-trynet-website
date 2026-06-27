@@ -151,47 +151,59 @@
      4. MOBILE NAV (hamburger)
      ============================================================ */
   function initMobileNav() {
-    const hamburger = document.getElementById('hamburger');
-    const navLinks = document.getElementById('navLinks');
-    if (!hamburger || !navLinks) return;
+  const hamburger = document.getElementById('hamburger');
+  const navLinks = document.getElementById('navLinks');
+  if (!hamburger || !navLinks) return;
 
-    const closeMenu = () => {
-      hamburger.classList.remove('open');
-      navLinks.classList.remove('open');
-      hamburger.setAttribute('aria-expanded', 'false');
-      document.body.style.overflow = '';
-    };
+  let savedScrollY = 0;
 
-    const openMenu = () => {
-      hamburger.classList.add('open');
-      navLinks.classList.add('open');
-      hamburger.setAttribute('aria-expanded', 'true');
-      document.body.style.overflow = 'hidden';
-    };
-
+  const closeMenu = () => {
+    hamburger.classList.remove('open');
+    navLinks.classList.remove('open');
     hamburger.setAttribute('aria-expanded', 'false');
-    hamburger.setAttribute('aria-controls', 'navLinks');
 
-    hamburger.addEventListener('click', () => {
-      const isOpen = navLinks.classList.contains('open');
-      isOpen ? closeMenu() : openMenu();
-    });
+    document.body.style.position = '';
+    document.body.style.top = '';
+    document.body.style.left = '';
+    document.body.style.right = '';
+    document.body.style.width = '';
+    window.scrollTo(0, savedScrollY);
+  };
 
-    // Close on link click
-    navLinks.querySelectorAll('.nav-link').forEach(link => {
-      link.addEventListener('click', closeMenu);
-    });
+  const openMenu = () => {
+    savedScrollY = window.scrollY;
 
-    // Close on Escape
-    document.addEventListener('keydown', (e) => {
-      if (e.key === 'Escape' && navLinks.classList.contains('open')) closeMenu();
-    });
+    hamburger.classList.add('open');
+    navLinks.classList.add('open');
+    hamburger.setAttribute('aria-expanded', 'true');
 
-    // Close if resized to desktop width
-    window.addEventListener('resize', () => {
-      if (window.innerWidth > 768 && navLinks.classList.contains('open')) closeMenu();
-    });
-  }
+    document.body.style.position = 'fixed';
+    document.body.style.top = `-${savedScrollY}px`;
+    document.body.style.left = '0';
+    document.body.style.right = '0';
+    document.body.style.width = '100%';
+  };
+
+  hamburger.setAttribute('aria-expanded', 'false');
+  hamburger.setAttribute('aria-controls', 'navLinks');
+
+  hamburger.addEventListener('click', () => {
+    const isOpen = navLinks.classList.contains('open');
+    isOpen ? closeMenu() : openMenu();
+  });
+
+  navLinks.querySelectorAll('.nav-link').forEach(link => {
+    link.addEventListener('click', closeMenu);
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && navLinks.classList.contains('open')) closeMenu();
+  });
+
+  window.addEventListener('resize', () => {
+    if (window.innerWidth > 768 && navLinks.classList.contains('open')) closeMenu();
+  });
+}
 
   /* ============================================================
      5. SCROLL REVEAL ANIMATIONS  [data-reveal]
